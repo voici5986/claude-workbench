@@ -50,6 +50,8 @@ export default function ProviderManager({ onBack }: ProviderManagerProps) {
   const [usageDialogOpen, setUsageDialogOpen] = useState(false);
   const [usageData, setUsageData] = useState<ApiKeyUsage | null>(null);
   const [usageProvider, setUsageProvider] = useState<ProviderConfig | null>(null);
+  // 用量缓存：key 是 provider id，value 是用量数据
+  const [usageCache, setUsageCache] = useState<Record<string, ApiKeyUsage>>({});
 
   useEffect(() => {
     loadData();
@@ -113,7 +115,7 @@ export default function ProviderManager({ onBack }: ProviderManagerProps) {
     }
   };
 
-  const queryUsage = async (config: ProviderConfig) => {
+  const queryUsage = async (config: ProviderConfig, showDialog: boolean = true) => {
     // 需要 API Key 才能查询用量
     const apiKey = config.api_key || config.auth_token;
     if (!apiKey) {
@@ -124,9 +126,13 @@ export default function ProviderManager({ onBack }: ProviderManagerProps) {
     try {
       setQueryingUsage(config.id);
       const usage = await api.queryProviderUsage(config.base_url, apiKey);
-      setUsageData(usage);
-      setUsageProvider(config);
-      setUsageDialogOpen(true);
+      // 缓存用量数据
+      setUsageCache(prev => ({ ...prev, [config.id]: usage }));
+      if (showDialog) {
+        setUsageData(usage);
+        setUsageProvider(config);
+        setUsageDialogOpen(true);
+      }
     } catch (error) {
       console.error('Failed to query usage:', error);
       setToastMessage({ message: `查询用量失败: ${error}`, type: 'error' });
@@ -353,7 +359,30 @@ export default function ProviderManager({ onBack }: ProviderManagerProps) {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 flex-shrink-0">
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  {/* 用量显示区域 */}
+                  {usageCache[config.id] && (
+                    <div className="text-right text-xs space-y-0.5 border-r pr-3 mr-1">
+                      <div className="text-muted-foreground">
+                        已用: <span className="font-medium text-foreground">{formatCurrency(usageCache[config.id].used_balance)}</span>
+                      </div>
+                      <div className="text-muted-foreground">
+                        {usageCache[config.id].is_unlimited ? (
+                          <span className="text-green-600 font-medium flex items-center justify-end gap-1">
+                            剩余: <Infinity className="h-3 w-3" /> 无限
+                          </span>
+                        ) : (
+                          <>
+                            剩余: <span className={`font-medium ${usageCache[config.id].remaining_balance > 10 ? 'text-green-600' : 'text-red-600'}`}>
+                              {formatCurrency(usageCache[config.id].remaining_balance)}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
                     size="sm"
@@ -423,6 +452,7 @@ export default function ProviderManager({ onBack }: ProviderManagerProps) {
                     )}
                     {isCurrentProvider(config) ? '已选择' : '切换到此配置'}
                   </Button>
+                  </div>
                 </div>
               </div>
             </Card>
