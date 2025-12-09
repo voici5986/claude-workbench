@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
-import { Loader2, AlertCircle, Bot, Code2, Sparkles, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, AlertCircle, Code2, Sparkles, CheckCircle2, XCircle } from "lucide-react";
+import { ClaudeIcon } from "@/components/icons/ClaudeIcon";
 import { cn } from "@/lib/utils";
 import { api } from "@/lib/api";
 import {
@@ -68,7 +69,7 @@ export const UnifiedEngineStatus: React.FC<UnifiedEngineStatusProps> = ({
           statusText: claudeStatus.is_installed ? '已安装' : '未检测到',
           version: claudeStatus.version,
           label: 'Claude Code', 
-          icon: Bot, 
+          icon: ClaudeIcon, 
           color: 'text-orange-500' 
         },
         { 
