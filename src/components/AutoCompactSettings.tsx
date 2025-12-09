@@ -51,6 +51,7 @@ import {
 } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 import { api, AutoCompactConfig, AutoCompactStatus, SessionContext, CompactionStrategy } from '@/lib/api';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface AutoCompactSettingsProps {
   open?: boolean;
@@ -63,6 +64,7 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
   onOpenChange,
   className,
 }) => {
+  const { t } = useTranslation();
   const [config, setConfig] = useState<AutoCompactConfig | null>(null);
   const [status, setStatus] = useState<AutoCompactStatus | null>(null);
   const [sessions, setSessions] = useState<SessionContext[]>([]);
@@ -157,10 +159,10 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
   };
 
   const getStrategyDescription = (strategy: CompactionStrategy) => {
-    if (strategy === 'Smart') return "智能压缩，保留关键信息和决策";
-    if (strategy === 'Aggressive') return "激进压缩，仅保留最关键的内容";
-    if (strategy === 'Conservative') return "保守压缩，保持更多上下文";
-    return "自定义压缩策略";
+    if (strategy === 'Smart') return t('autoCompact.smartCompressionDescription');
+    if (strategy === 'Aggressive') return t('autoCompact.aggressiveCompressionDescription');
+    if (strategy === 'Conservative') return t('autoCompact.conservativeCompressionDescription');
+    return t('autoCompact.customCompressionDescription');
   };
 
   const getSessionStatusIcon = (status: SessionContext['status']) => {
@@ -171,13 +173,13 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
   };
 
   const getSessionStatusText = (status: SessionContext['status']) => {
-    if (status === 'Active') return "活跃";
-    if (status === 'Compacting') return "压缩中";
-    if (status === 'Idle') return "空闲";
+    if (status === 'Active') return t('autoCompact.active');
+    if (status === 'Compacting') return t('autoCompact.compacting');
+    if (status === 'Idle') return t('autoCompact.idle');
     if (typeof status === 'object' && 'CompactionFailed' in status) {
-      return `压缩失败: ${status.CompactionFailed}`;
+      return `${t('autoCompact.compactionFailed')}: ${status.CompactionFailed}`;
     }
-    return "未知";
+    return t('autoCompact.idle');
   };
 
   const formatTokenCount = (count: number) => {
@@ -192,7 +194,7 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
         <DialogContent className="max-w-4xl max-h-[80vh]">
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
-            <span className="ml-3 text-muted-foreground">加载自动压缩设置...</span>
+            <span className="ml-3 text-muted-foreground">{t('autoCompact.loading')}</span>
           </div>
         </DialogContent>
       </Dialog>
@@ -205,10 +207,10 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-blue-500" />
-            自动上下文管理
+            {t('autoCompact.title')}
           </DialogTitle>
           <DialogDescription>
-            配置 Claude Code SDK 的智能上下文窗口管理和自动压缩功能
+            {t('autoCompact.subtitle')}
           </DialogDescription>
         </DialogHeader>
 
@@ -226,15 +228,15 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="config" className="flex items-center gap-2">
               <Settings2 className="h-4 w-4" />
-              配置
+              {t('autoCompact.config')}
             </TabsTrigger>
             <TabsTrigger value="status" className="flex items-center gap-2">
               <Activity className="h-4 w-4" />
-              状态监控
+              {t('autoCompact.statusMonitor')}
             </TabsTrigger>
             <TabsTrigger value="sessions" className="flex items-center gap-2">
               <BarChart3 className="h-4 w-4" />
-              会话管理
+              {t('autoCompact.sessionManagement')}
             </TabsTrigger>
           </TabsList>
 
@@ -243,18 +245,18 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Zap className="h-4 w-4" />
-                  基本设置
+                  {t('autoCompact.basicSettings')}
                 </CardTitle>
                 <CardDescription>
-                  启用和配置自动压缩功能的核心参数
+                  {t('autoCompact.basicSettingsDescription')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
-                    <Label className="text-base">启用自动压缩</Label>
+                    <Label className="text-base">{t('autoCompact.enableAutoCompact')}</Label>
                     <p className="text-sm text-muted-foreground">
-                      自动监控上下文长度并在需要时触发压缩
+                      {t('autoCompact.enableAutoCompactDescription')}
                     </p>
                   </div>
                   <Switch
@@ -268,14 +270,14 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Gauge className="h-4 w-4 text-blue-500" />
-                    <Label className="text-base">最大上下文 Tokens</Label>
+                    <Label className="text-base">{t('autoCompact.maxContextTokens')}</Label>
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger>
                           <Info className="h-4 w-4 text-muted-foreground" />
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Claude 4 默认支持 200K tokens，建议设置为 120K 以确保性能</p>
+                          <p>{t('autoCompact.maxContextTokensHint')}</p>
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
@@ -295,7 +297,7 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-orange-500" />
-                    <Label className="text-base">压缩阈值</Label>
+                    <Label className="text-base">{t('autoCompact.compactionThreshold')}</Label>
                     <Badge variant="secondary">{Math.round(config.compaction_threshold * 100)}%</Badge>
                   </div>
                   <div className="px-2">
@@ -310,8 +312,8 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
                     />
                     <div className="flex justify-between text-xs text-muted-foreground mt-1">
                       <span>50%</span>
-                      <span>保守</span>
-                      <span>激进</span>
+                      <span>{t('autoCompact.conservative')}</span>
+                      <span>{t('autoCompact.aggressive')}</span>
                       <span>100%</span>
                     </div>
                   </div>
@@ -320,7 +322,7 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Timer className="h-4 w-4 text-green-500" />
-                    <Label className="text-base">压缩间隔 (秒)</Label>
+                    <Label className="text-base">{t('autoCompact.compactionInterval')}</Label>
                   </div>
                   <Input
                     type="number"
@@ -333,7 +335,7 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
                     step={60}
                   />
                   <p className="text-xs text-muted-foreground">
-                    两次压缩之间的最小时间间隔，防止频繁压缩影响性能
+                    {t('autoCompact.compactionIntervalHint')}
                   </p>
                 </div>
               </CardContent>
@@ -343,15 +345,15 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Brain className="h-4 w-4" />
-                  压缩策略
+                  {t('autoCompact.strategy')}
                 </CardTitle>
                 <CardDescription>
-                  选择适合您使用场景的压缩策略
+                  {t('autoCompact.strategyDescription')}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-3">
-                  <Label className="text-base">策略类型</Label>
+                  <Label className="text-base">{t('autoCompact.strategyType')}</Label>
                   <Select
                     value={typeof config.compaction_strategy === 'string' ? config.compaction_strategy : 'Custom'}
                     onValueChange={(value) => {
@@ -377,8 +379,8 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
                         <div className="flex items-center gap-2">
                           <Brain className="h-4 w-4" />
                           <div>
-                            <p className="font-medium">智能压缩</p>
-                            <p className="text-xs text-muted-foreground">平衡性能和完整性</p>
+                            <p className="font-medium">{t('autoCompact.smartCompression')}</p>
+                            <p className="text-xs text-muted-foreground">{t('autoCompact.smartCompressionShort')}</p>
                           </div>
                         </div>
                       </SelectItem>
@@ -386,8 +388,8 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
                         <div className="flex items-center gap-2">
                           <Zap className="h-4 w-4" />
                           <div>
-                            <p className="font-medium">激进压缩</p>
-                            <p className="text-xs text-muted-foreground">最大程度减少 tokens</p>
+                            <p className="font-medium">{t('autoCompact.aggressiveCompression')}</p>
+                            <p className="text-xs text-muted-foreground">{t('autoCompact.aggressiveCompressionShort')}</p>
                           </div>
                         </div>
                       </SelectItem>
@@ -395,8 +397,8 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
                         <div className="flex items-center gap-2">
                           <Shield className="h-4 w-4" />
                           <div>
-                            <p className="font-medium">保守压缩</p>
-                            <p className="text-xs text-muted-foreground">保持更多上下文</p>
+                            <p className="font-medium">{t('autoCompact.conservativeCompression')}</p>
+                            <p className="text-xs text-muted-foreground">{t('autoCompact.conservativeCompressionShort')}</p>
                           </div>
                         </div>
                       </SelectItem>
@@ -404,8 +406,8 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
                         <div className="flex items-center gap-2">
                           <Settings2 className="h-4 w-4" />
                           <div>
-                            <p className="font-medium">自定义</p>
-                            <p className="text-xs text-muted-foreground">使用自定义指令</p>
+                            <p className="font-medium">{t('autoCompact.customCompression')}</p>
+                            <p className="text-xs text-muted-foreground">{t('autoCompact.customCompressionShort')}</p>
                           </div>
                         </div>
                       </SelectItem>
@@ -418,15 +420,15 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
 
                 {(typeof config.compaction_strategy === 'object' || config.custom_instructions) && (
                   <div className="space-y-3">
-                    <Label className="text-base">自定义压缩指令</Label>
+                    <Label className="text-base">{t('autoCompact.customInstructions')}</Label>
                     <Textarea
                       value={config.custom_instructions || ""}
                       onChange={(e) => handleConfigChange({ custom_instructions: e.target.value })}
-                      placeholder="输入自定义的压缩指令，指导 Claude 如何处理上下文..."
+                      placeholder={t('autoCompact.customInstructionsPlaceholder')}
                       className="min-h-[100px]"
                     />
                     <p className="text-xs text-muted-foreground">
-                      这些指令将与基础策略结合使用，提供更精确的压缩控制
+                      {t('autoCompact.customInstructionsHint')}
                     </p>
                   </div>
                 )}
@@ -436,9 +438,9 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="space-y-0.5">
-                      <Label className="text-base">保留最近消息</Label>
+                      <Label className="text-base">{t('autoCompact.preserveRecentMessages')}</Label>
                       <p className="text-sm text-muted-foreground">
-                        确保最新的交互内容不被压缩
+                        {t('autoCompact.preserveRecentMessagesDescription')}
                       </p>
                     </div>
                     <Switch
@@ -450,7 +452,7 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
 
                   {config.preserve_recent_messages && (
                     <div className="space-y-2">
-                      <Label>保留消息数量</Label>
+                      <Label>{t('autoCompact.preserveMessageCount')}</Label>
                       <Input
                         type="number"
                         value={config.preserve_message_count}
@@ -473,7 +475,7 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
                 disabled={isLoading}
               >
                 <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
-                刷新
+                {t('buttons.refresh')}
               </Button>
               <Button
                 onClick={handleSave}
@@ -489,7 +491,7 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
                 ) : (
                   <Save className="h-4 w-4 mr-2" aria-hidden="true" />
                 )}
-                {isSaving ? "保存中..." : "保存设置"}
+                {isSaving ? t('common.saving') : t('autoCompact.saveSettingsButton')}
               </Button>
             </div>
           </TabsContent>
@@ -500,13 +502,13 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Activity className="h-4 w-4" />
-                    系统状态
+                    {t('autoCompact.systemStatus')}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">状态</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('autoCompact.statusLabel')}</p>
                       <div className="flex items-center gap-2">
                         {status.enabled ? (
                           <CheckCircle2 className="h-4 w-4 text-green-500" />
@@ -514,13 +516,13 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
                           <XCircle className="h-4 w-4 text-red-500" />
                         )}
                         <span className="text-sm">
-                          {status.enabled ? "启用" : "禁用"}
+                          {status.enabled ? t('autoCompact.statusEnabled') : t('autoCompact.statusDisabled')}
                         </span>
                       </div>
                     </div>
 
                     <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">监控中的会话</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('autoCompact.monitoringSessions')}</p>
                       <div className="flex items-center gap-2">
                         <MessageSquare className="h-4 w-4 text-blue-500" />
                         <span className="text-sm">{status.sessions_count}</span>
@@ -528,7 +530,7 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
                     </div>
 
                     <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">总压缩次数</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('autoCompact.totalCompactions')}</p>
                       <div className="flex items-center gap-2">
                         <Zap className="h-4 w-4 text-orange-500" />
                         <span className="text-sm">{status.total_compactions}</span>
@@ -536,7 +538,7 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
                     </div>
 
                     <div className="space-y-1">
-                      <p className="text-sm font-medium text-muted-foreground">压缩阈值</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t('autoCompact.compactionThresholdLabel')}</p>
                       <div className="flex items-center gap-2">
                         <Gauge className="h-4 w-4 text-purple-500" />
                         <span className="text-sm">
@@ -556,7 +558,7 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
                 <CardTitle className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <BarChart3 className="h-4 w-4" />
-                    活跃会话
+                    {t('autoCompact.activeSessions')}
                   </div>
                   <Button
                     variant="outline"
@@ -568,15 +570,15 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
                   </Button>
                 </CardTitle>
                 <CardDescription>
-                  监控所有注册的 Claude 会话的上下文状态
+                  {t('autoCompact.activeSessionsDescription')}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {sessions.length === 0 ? (
                   <div className="text-center py-8 text-muted-foreground">
                     <MessageSquare className="h-8 w-8 mx-auto mb-3 opacity-50" />
-                    <p>暂无活跃会话</p>
-                    <p className="text-sm">启动 Claude Code 会话后将在此显示</p>
+                    <p>{t('autoCompact.noActiveSessions')}</p>
+                    <p className="text-sm">{t('autoCompact.noActiveSessionsHint')}</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -608,7 +610,7 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
                                 onClick={() => handleManualCompaction(session.session_id)}
                               >
                                 <Zap className="h-3 w-3 mr-1" />
-                                压缩
+                                {t('autoCompact.compress')}
                               </Button>
                             )}
                           </div>
@@ -616,21 +618,21 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
 
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
                           <div>
-                            <p className="text-muted-foreground">当前 Tokens</p>
+                            <p className="text-muted-foreground">{t('autoCompact.currentTokens')}</p>
                             <p className="font-medium">
                               {formatTokenCount(session.current_tokens)}
                             </p>
                           </div>
                           <div>
-                            <p className="text-muted-foreground">消息数量</p>
+                            <p className="text-muted-foreground">{t('autoCompact.messageCount')}</p>
                             <p className="font-medium">{session.message_count}</p>
                           </div>
                           <div>
-                            <p className="text-muted-foreground">压缩次数</p>
+                            <p className="text-muted-foreground">{t('autoCompact.compactionCount')}</p>
                             <p className="font-medium">{session.compaction_count}</p>
                           </div>
                           <div>
-                            <p className="text-muted-foreground">项目路径</p>
+                            <p className="text-muted-foreground">{t('autoCompact.projectPath')}</p>
                             <p className="font-medium text-xs truncate">
                               ...{session.project_path.slice(-20)}
                             </p>
@@ -640,7 +642,7 @@ export const AutoCompactSettings: React.FC<AutoCompactSettingsProps> = ({
                         {session.current_tokens > 0 && config && (
                           <div className="space-y-2">
                             <div className="flex justify-between text-xs text-muted-foreground">
-                              <span>使用情况</span>
+                              <span>{t('autoCompact.usageLabel')}</span>
                               <span>
                                 {Math.round((session.current_tokens / config.max_context_tokens) * 100)}%
                               </span>

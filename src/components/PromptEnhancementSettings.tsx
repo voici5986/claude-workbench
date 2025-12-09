@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import { PromptContextConfigSettings } from "@/components/PromptContextConfigSettings";
 import { AcemcpConfigSettings } from "@/components/AcemcpConfigSettings";
 import { Separator } from "@/components/ui/separator";
+import { useTranslation } from "@/hooks/useTranslation";
 
 interface PromptEnhancementSettingsProps {
   className?: string;
@@ -38,6 +39,7 @@ interface PromptEnhancementSettingsProps {
 export const PromptEnhancementSettings: React.FC<PromptEnhancementSettingsProps> = ({
   className
 }) => {
+  const { t } = useTranslation();
   const [providers, setProviders] = useState<PromptEnhancementProvider[]>([]);
   const [editingProvider, setEditingProvider] = useState<PromptEnhancementProvider | null>(null);
   const [showDialog, setShowDialog] = useState(false);
@@ -149,24 +151,24 @@ export const PromptEnhancementSettings: React.FC<PromptEnhancementSettingsProps>
 
       <Separator />
 
-      {/* API 提供商配置 */}
+      {/* API Provider Configuration */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold">提示词优化API配置</h3>
+            <h3 className="text-lg font-semibold">{t('promptEnhancement.title')}</h3>
             <p className="text-sm text-muted-foreground">
-              配置第三方AI服务用于优化提示词（OpenAI、Deepseek、通义千问等）
+              {t('promptEnhancement.subtitle')}
             </p>
           </div>
           <Button onClick={handleAdd} size="sm">
             <Plus className="h-4 w-4 mr-2" />
-            添加提供商
+            {t('promptEnhancement.addProvider')}
           </Button>
         </div>
 
-      {/* 预设模板快速添加 */}
+      {/* Quick Add Presets */}
       <Card className="p-4 bg-muted/30">
-        <h4 className="text-sm font-medium mb-3">快速添加预设模板：</h4>
+        <h4 className="text-sm font-medium mb-3">{t('promptEnhancement.quickAddPresets')}</h4>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => handleUsePreset('openai')}>
             <Sparkles className="h-3 w-3 mr-1" />
@@ -178,7 +180,7 @@ export const PromptEnhancementSettings: React.FC<PromptEnhancementSettingsProps>
           </Button>
           <Button variant="outline" size="sm" onClick={() => handleUsePreset('qwen')}>
             <Sparkles className="h-3 w-3 mr-1" />
-            通义千问
+            Qwen
           </Button>
           <Button variant="outline" size="sm" onClick={() => handleUsePreset('siliconflow')}>
             <Sparkles className="h-3 w-3 mr-1" />
@@ -195,17 +197,17 @@ export const PromptEnhancementSettings: React.FC<PromptEnhancementSettingsProps>
         </div>
       </Card>
 
-      {/* 提供商列表 */}
+      {/* Provider List */}
       {providers.length === 0 ? (
         <Card className="p-8 text-center border-dashed">
           <Sparkles className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h4 className="font-medium mb-2">暂无配置的提供商</h4>
+          <h4 className="font-medium mb-2">{t('promptEnhancement.noProviders')}</h4>
           <p className="text-sm text-muted-foreground mb-4">
-            添加第三方AI服务以使用提示词优化功能
+            {t('promptEnhancement.noProvidersDescription')}
           </p>
           <Button onClick={handleAdd}>
             <Plus className="h-4 w-4 mr-2" />
-            添加第一个提供商
+            {t('promptEnhancement.addFirstProvider')}
           </Button>
         </Card>
       ) : (
@@ -217,28 +219,28 @@ export const PromptEnhancementSettings: React.FC<PromptEnhancementSettingsProps>
                   <div className="flex items-center gap-2 mb-1">
                     <h4 className="font-medium">{provider.name}</h4>
                     <Badge variant={provider.enabled ? "default" : "outline"} className="text-xs">
-                      {provider.enabled ? "已启用" : "已禁用"}
+                      {provider.enabled ? t('buttons.enable') : t('buttons.disable')}
                     </Badge>
                   </div>
                   <div className="text-sm text-muted-foreground space-y-1">
-                    <div>模型: {provider.model}</div>
+                    <div>{t('promptEnhancement.modelName')}: {provider.model}</div>
                     <div className="truncate">API: {provider.apiUrl}</div>
                     <div className="flex items-center gap-2">
-                      <span>格式: {
+                      <span>{t('promptEnhancement.apiFormat')}: {
                         provider.apiFormat
                           ? (provider.apiFormat === 'gemini' ? 'Gemini' :
                              provider.apiFormat === 'anthropic' ? 'Anthropic' : 'OpenAI')
-                          : `自动 (${
+                          : `${t('promptEnhancement.autoDetect')} (${
                               detectApiFormat(provider.apiUrl) === 'gemini' ? 'Gemini' :
                               detectApiFormat(provider.apiUrl) === 'anthropic' ? 'Anthropic' : 'OpenAI'
                             })`
                       }</span>
-                      {provider.temperature !== undefined && <span>| 温度: {provider.temperature}</span>}
+                      {provider.temperature !== undefined && <span>| Temp: {provider.temperature}</span>}
                       {provider.maxTokens !== undefined && <span>| Token: {provider.maxTokens}</span>}
                     </div>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <Button
                     variant="outline"
@@ -249,7 +251,7 @@ export const PromptEnhancementSettings: React.FC<PromptEnhancementSettingsProps>
                     {testingId === provider.id ? (
                       <Loader2 className="h-3 w-3 animate-spin" />
                     ) : (
-                      "测试"
+                      t('buttons.test')
                     )}
                   </Button>
                   <Button
@@ -257,7 +259,7 @@ export const PromptEnhancementSettings: React.FC<PromptEnhancementSettingsProps>
                     size="sm"
                     onClick={() => handleToggle(provider.id, !provider.enabled)}
                   >
-                    {provider.enabled ? "禁用" : "启用"}
+                    {provider.enabled ? t('buttons.disable') : t('buttons.enable')}
                   </Button>
                   <Button
                     variant="outline"
@@ -275,8 +277,8 @@ export const PromptEnhancementSettings: React.FC<PromptEnhancementSettingsProps>
                   </Button>
                 </div>
               </div>
-              
-              {/* 测试结果 */}
+
+              {/* Test Result */}
               {testResult && testResult.providerId === provider.id && testingId === null && (
                 <div className={cn(
                   "mt-3 p-2 rounded-md text-sm flex items-center gap-2",
@@ -296,35 +298,35 @@ export const PromptEnhancementSettings: React.FC<PromptEnhancementSettingsProps>
       )}
       </div>
 
-      {/* 编辑对话框 */}
+      {/* Edit Dialog */}
       <Dialog open={showDialog} onOpenChange={setShowDialog}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>
-              {editingProvider && providers.find(p => p.id === editingProvider.id) ? '编辑提供商' : '添加提供商'}
+              {editingProvider && providers.find(p => p.id === editingProvider.id) ? t('promptEnhancement.editProvider') : t('promptEnhancement.addProvider')}
             </DialogTitle>
           </DialogHeader>
 
           {editingProvider && (
             <div className="space-y-4">
               <div>
-                <Label>提供商名称</Label>
+                <Label>{t('promptEnhancement.providerName')}</Label>
                 <Input
                   value={editingProvider.name}
                   onChange={(e) => setEditingProvider({ ...editingProvider, name: e.target.value })}
-                  placeholder="例如: OpenAI GPT-4"
+                  placeholder={t('promptEnhancement.providerNamePlaceholder')}
                 />
               </div>
 
               <div>
-                <Label>API 地址</Label>
+                <Label>{t('promptEnhancement.apiUrl')}</Label>
                 <Input
                   value={editingProvider.apiUrl}
                   onChange={(e) => setEditingProvider({ ...editingProvider, apiUrl: e.target.value })}
-                  placeholder="例如: https://api.openai.com 或 http://localhost:3001"
+                  placeholder={t('promptEnhancement.apiUrlPlaceholder')}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  支持简化输入，系统会自动补全 /v1/chat/completions 等端点路径
+                  {t('promptEnhancement.apiUrlHint')}
                 </p>
               </div>
 
@@ -339,7 +341,7 @@ export const PromptEnhancementSettings: React.FC<PromptEnhancementSettingsProps>
               </div>
 
               <div>
-                <Label>模型名称</Label>
+                <Label>{t('promptEnhancement.modelName')}</Label>
                 <Input
                   value={editingProvider.model}
                   onChange={(e) => setEditingProvider({ ...editingProvider, model: e.target.value })}
@@ -348,7 +350,7 @@ export const PromptEnhancementSettings: React.FC<PromptEnhancementSettingsProps>
               </div>
 
               <div>
-                <Label>API 格式</Label>
+                <Label>{t('promptEnhancement.apiFormat')}</Label>
                 <Select
                   value={editingProvider.apiFormat || 'auto'}
                   onValueChange={(value) => setEditingProvider({
@@ -361,47 +363,47 @@ export const PromptEnhancementSettings: React.FC<PromptEnhancementSettingsProps>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="auto">
-                      自动检测 {editingProvider.apiUrl ? `(${
+                      {t('promptEnhancement.autoDetect')} {editingProvider.apiUrl ? `(${
                         detectApiFormat(editingProvider.apiUrl) === 'gemini' ? 'Gemini' :
                         detectApiFormat(editingProvider.apiUrl) === 'anthropic' ? 'Anthropic' : 'OpenAI'
                       })` : ''}
                     </SelectItem>
-                    <SelectItem value="openai">OpenAI 格式 (/v1/chat/completions)</SelectItem>
-                    <SelectItem value="anthropic">Anthropic 格式 (/v1/messages)</SelectItem>
-                    <SelectItem value="gemini">Google Gemini 格式</SelectItem>
+                    <SelectItem value="openai">{t('promptEnhancement.openaiFormat')}</SelectItem>
+                    <SelectItem value="anthropic">{t('promptEnhancement.anthropicFormat')}</SelectItem>
+                    <SelectItem value="gemini">{t('promptEnhancement.geminiFormat')}</SelectItem>
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground mt-1">
-                  系统会根据 URL 自动识别 API 格式，也可手动指定
+                  {t('promptEnhancement.apiFormatHint')}
                 </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label>温度 (可选，0-2)</Label>
+                  <Label>{t('promptEnhancement.temperatureOptional')}</Label>
                   <Input
                     type="number"
                     min="0"
                     max="2"
                     step="0.1"
                     value={editingProvider.temperature || ''}
-                    onChange={(e) => setEditingProvider({ 
-                      ...editingProvider, 
-                      temperature: e.target.value ? parseFloat(e.target.value) : undefined 
+                    onChange={(e) => setEditingProvider({
+                      ...editingProvider,
+                      temperature: e.target.value ? parseFloat(e.target.value) : undefined
                     })}
-                    placeholder="留空使用API默认值"
+                    placeholder={t('promptEnhancement.temperaturePlaceholder')}
                   />
                 </div>
                 <div>
-                  <Label>最大 Tokens (可选)</Label>
+                  <Label>{t('promptEnhancement.maxTokensOptional')}</Label>
                   <Input
                     type="number"
                     value={editingProvider.maxTokens || ''}
-                    onChange={(e) => setEditingProvider({ 
-                      ...editingProvider, 
-                      maxTokens: e.target.value ? parseInt(e.target.value) : undefined 
+                    onChange={(e) => setEditingProvider({
+                      ...editingProvider,
+                      maxTokens: e.target.value ? parseInt(e.target.value) : undefined
                     })}
-                    placeholder="留空使用API默认值"
+                    placeholder={t('promptEnhancement.maxTokensPlaceholder')}
                   />
                 </div>
               </div>
@@ -413,39 +415,39 @@ export const PromptEnhancementSettings: React.FC<PromptEnhancementSettingsProps>
               setShowDialog(false);
               setEditingProvider(null);
             }}>
-              取消
+              {t('buttons.cancel')}
             </Button>
             <Button onClick={handleSave}>
               <Save className="h-4 w-4 mr-2" />
-              保存
+              {t('buttons.save')}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* 删除确认对话框 */}
+      {/* Delete Confirm Dialog */}
       <Dialog open={deleteConfirm.show} onOpenChange={(open) => !open && cancelDelete()}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>确认删除</DialogTitle>
+            <DialogTitle>{t('promptEnhancement.confirmDeleteProvider')}</DialogTitle>
           </DialogHeader>
 
           <div className="py-4">
             <p className="text-sm text-muted-foreground">
-              确定要删除提供商 <span className="font-medium text-foreground">{deleteConfirm.provider?.name}</span> 吗？
+              {t('promptEnhancement.confirmDeleteMessage').replace('{name}', deleteConfirm.provider?.name || '')}
             </p>
             <p className="text-sm text-muted-foreground mt-2">
-              此操作无法撤销。
+              {t('promptEnhancement.cannotUndo')}
             </p>
           </div>
 
           <DialogFooter>
             <Button variant="outline" onClick={cancelDelete}>
-              取消
+              {t('buttons.cancel')}
             </Button>
             <Button variant="destructive" onClick={confirmDelete}>
               <Trash2 className="h-4 w-4 mr-2" />
-              确认删除
+              {t('promptEnhancement.confirmDeleteButton')}
             </Button>
           </DialogFooter>
         </DialogContent>
