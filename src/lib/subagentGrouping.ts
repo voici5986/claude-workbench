@@ -177,7 +177,6 @@ function getTechnicalMessageType(message: ClaudeStreamMessage): 'tool' | 'thinki
  * 当 Claude 在一条消息中并行调用多个子代理时，每个 Task 都应该被正确分组
  */
 export function groupMessages(messages: ClaudeStreamMessage[]): MessageGroup[] {
-  const groups: MessageGroup[] = [];
   const processedIndices = new Set<number>();
 
   // 第一遍：识别所有 Task 工具调用
@@ -318,23 +317,32 @@ export function groupMessages(messages: ClaudeStreamMessage[]): MessageGroup[] {
     }
 
     // 处理普通消息
-    const msg = group.message;
-    const msgType = getTechnicalMessageType(msg);
+    if (group.type === 'normal') {
+      const msg = group.message;
+      const msgType = getTechnicalMessageType(msg);
 
-    if (msgType) {
-      // 如果有正在进行的聚合
-      if (currentAggregation) {
-        // 检查类型是否一致
-        if (currentAggregation.aggType === msgType) {
-          // 类型一致，合并
-          currentAggregation.messages.push(msg);
+      if (msgType) {
+        // 如果有正在进行的聚合
+        if (currentAggregation) {
+          // 检查类型是否一致
+          if (currentAggregation.aggType === msgType) {
+            // 类型一致，合并
+            currentAggregation.messages.push(msg);
+          } else {
+            // 类型不一致（例如 Thinking -> Tool），结算上一个聚合，开始新的聚合
+            finalGroups.push({
+              type: 'aggregated',
+              messages: currentAggregation.messages,
+              index: currentAggregation.startIndex
+            });
+            currentAggregation = { 
+              messages: [msg], 
+              startIndex: group.index,
+              aggType: msgType 
+            };
+          }
         } else {
-          // 类型不一致（例如 Thinking -> Tool），结算上一个聚合，开始新的聚合
-          finalGroups.push({
-            type: 'aggregated',
-            messages: currentAggregation.messages,
-            index: currentAggregation.startIndex
-          });
+          // 开始新的聚合
           currentAggregation = { 
             messages: [msg], 
             startIndex: group.index,
@@ -342,23 +350,19 @@ export function groupMessages(messages: ClaudeStreamMessage[]): MessageGroup[] {
           };
         }
       } else {
-        // 开始新的聚合
-        currentAggregation = { 
-          messages: [msg], 
-          startIndex: group.index,
-          aggType: msgType 
-        };
+        // 不可聚合的消息（文本等），结算之前的聚合
+        if (currentAggregation) {
+          finalGroups.push({
+            type: 'aggregated',
+            messages: currentAggregation.messages,
+            index: currentAggregation.startIndex
+          });
+          currentAggregation = null;
+        }
+        finalGroups.push(group);
       }
     } else {
-      // 不可聚合的消息（文本等），结算之前的聚合
-      if (currentAggregation) {
-        finalGroups.push({
-          type: 'aggregated',
-          messages: currentAggregation.messages,
-          index: currentAggregation.startIndex
-        });
-        currentAggregation = null;
-      }
+      // 理论上不会执行到这里，但为了类型安全直接推入
       finalGroups.push(group);
     }
   });
