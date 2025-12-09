@@ -120,7 +120,7 @@ export const UnifiedEngineStatus: React.FC<UnifiedEngineStatusProps> = ({
             <TooltipProvider key={engine.type}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="relative group cursor-help">
+                  <div className="relative group cursor-default">
                     <engine.icon className={cn("h-5 w-5 transition-opacity", engine.isInstalled ? engine.color : "text-muted-foreground/40")} />
                     <div className={cn(
                       "absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full border border-background",
