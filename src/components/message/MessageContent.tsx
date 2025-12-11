@@ -7,6 +7,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { cn } from "@/lib/utils";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { useTypewriter } from "@/hooks/useTypewriter";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 
 interface CodeBlockRendererProps {
   language: string;
@@ -181,40 +182,78 @@ const MessageContentComponent: React.FC<MessageContentProps> = ({
       onDoubleClick={handleDoubleClick}
       title={isTyping ? "双击跳过打字效果" : undefined}
     >
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          // 代码块渲染
-          code(props: any) {
-            const { inline, className, children, ...rest } = props;
-            const match = /language-(\w+)/.exec(className || '');
-            const language = match ? match[1] : '';
+      <ErrorBoundary
+        onError={(error) => {
+          console.error('[MessageContent] Markdown rendering error:', error);
+        }}
+        fallback={(error) => (
+          <div className="p-4 rounded-md border border-destructive/20 bg-destructive/5 my-2">
+            <p className="text-sm font-medium text-destructive mb-2">
+              渲染内容时出错 (Markdown/Syntax Highlighting)
+            </p>
+            <pre className="text-xs font-mono whitespace-pre-wrap text-muted-foreground bg-background/50 p-2 rounded max-h-[200px] overflow-y-auto">
+              {textToDisplay}
+            </pre>
+            <details className="mt-2">
+              <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
+                错误详情
+              </summary>
+              <p className="text-xs text-destructive mt-1 font-mono">
+                {error.message}
+              </p>
+            </details>
+          </div>
+        )}
+      >
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            // 代码块渲染
+            code(props: any) {
+              const { inline, className, children, ...rest } = props;
+              const match = /language-(\w+)/.exec(className || '');
+              const language = match ? match[1] : '';
 
-            if (inline || !language) {
+              if (inline || !language) {
+                return (
+                  <code
+                    className={cn(
+                      "px-1.5 py-0.5 rounded-md bg-muted/50 border border-border/50 text-xs font-mono text-foreground/80",
+                      className
+                    )}
+                    {...rest}
+                  >
+                    {children}
+                  </code>
+                );
+              }
+
+              const code = String(children).replace(/\n$/, '');
+              
+              // 再次包裹 ErrorBoundary 以捕获 SyntaxHighlighter 特有的正则错误
               return (
-                <code
-                  className={cn(
-                    "px-1.5 py-0.5 rounded-md bg-muted/50 border border-border/50 text-xs font-mono text-foreground/80",
-                    className
+                <ErrorBoundary
+                  fallback={() => (
+                    <div className="my-3 rounded-lg overflow-hidden bg-muted/20 border border-border/50">
+                      <div className="flex items-center justify-between px-3 py-1.5 bg-muted/30">
+                        <span className="text-xs font-mono text-muted-foreground">{language} (Plain Text)</span>
+                      </div>
+                      <pre className="p-3 text-xs font-mono overflow-auto text-foreground/80">
+                        {code}
+                      </pre>
+                    </div>
                   )}
-                  {...rest}
                 >
-                  {children}
-                </code>
+                  <CodeBlockRenderer
+                    language={language}
+                    code={code}
+                    syntaxTheme={syntaxTheme}
+                  />
+                </ErrorBoundary>
               );
-            }
+            },
 
-            const code = String(children).replace(/\n$/, '');
-            return (
-              <CodeBlockRenderer
-                language={language}
-                code={code}
-                syntaxTheme={syntaxTheme}
-              />
-            );
-          },
-
-          // 链接渲染
+            // 链接渲染
           a({ node, children, href, ...props }) {
             return (
               <a
@@ -267,6 +306,7 @@ const MessageContentComponent: React.FC<MessageContentProps> = ({
       >
         {textToDisplay}
       </ReactMarkdown>
+      </ErrorBoundary>
 
       {/* 流式输出光标指示器 - 只在打字中或流式输出时显示 */}
       {(isStreaming || isTyping) && (

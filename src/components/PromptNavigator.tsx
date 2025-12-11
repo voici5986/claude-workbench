@@ -76,13 +76,18 @@ const truncateText = (text: string, maxLength: number = 80): string => {
 const highlightText = (text: string, keyword: string): React.ReactNode => {
   if (!keyword.trim()) return text;
 
-  const parts = text.split(new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
+  try {
+    const parts = text.split(new RegExp(`(${keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
 
-  return parts.map((part, i) =>
-    part.toLowerCase() === keyword.toLowerCase()
-      ? <mark key={i} className="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5">{part}</mark>
-      : part
-  );
+    return parts.map((part, i) =>
+      part.toLowerCase() === keyword.toLowerCase()
+        ? <mark key={i} className="bg-yellow-200 dark:bg-yellow-800 rounded px-0.5">{part}</mark>
+        : part
+    );
+  } catch (error) {
+    console.warn('[PromptNavigator] Failed to highlight text:', error);
+    return text;
+  }
 };
 
 /**
