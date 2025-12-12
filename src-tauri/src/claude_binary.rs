@@ -8,6 +8,8 @@ use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::path::PathBuf;
 use std::process::Command;
+#[cfg(target_os = "windows")]
+use std::time::{SystemTime, UNIX_EPOCH};
 use tauri::Manager;
 
 /// 运行时环境信息（替换单纯的 #[cfg] 检测，支持容器/WSL/架构）
@@ -586,6 +588,13 @@ fn collect_runtime_candidates(
                 search_roots.push(format!(r"{}\Programs\{}", local_appdata, tool));
                 search_roots.push(format!(r"{}\npm", local_appdata));
                 search_roots.push(format!(r"{}\pnpm", local_appdata));
+
+                // fnm (Fast Node Manager) multishells
+                // GUI apps launched outside an interactive shell may not inherit the
+                // fnm_multishells PATH entry, so scan it explicitly.
+                for p in find_fnm_multishell_candidates(&local_appdata, &aliases) {
+                    push_candidate(&mut candidates, &mut seen, p, "fnm-multishells", 2);
+                }
             }
             if let Ok(userprofile) = std::env::var("USERPROFILE") {
                 search_roots.push(format!(r"{}\scoop\shims", userprofile));
@@ -757,6 +766,79 @@ fn collect_runtime_candidates(
     }
 
     candidates
+}
+
+#[cfg(target_os = "windows")]
+fn find_fnm_multishell_candidates(local_appdata: &str, aliases: &[String]) -> Vec<String> {
+    let base = PathBuf::from(local_appdata).join("fnm_multishells");
+    if !base.exists() {
+        return Vec::new();
+    }
+
+    let mut dirs: Vec<(SystemTime, PathBuf)> = Vec::new();
+    if let Ok(entries) = std::fs::read_dir(&base) {
+        for entry in entries.flatten() {
+            if entry.file_type().map(|t| t.is_dir()).unwrap_or(false) {
+                let modified = entry
+                    .metadata()
+                    .and_then(|m| m.modified())
+                    .unwrap_or(UNIX_EPOCH);
+                dirs.push((modified, entry.path()));
+            }
+        }
+    }
+
+    // Newest multishell directories first; cap to avoid excessive scanning.
+    dirs.sort_by(|a, b| b.0.cmp(&a.0));
+    let mut out: Vec<String> = Vec::new();
+    for (_mtime, dir) in dirs.into_iter().take(32) {
+        for alias in aliases {
+            let candidate = dir.join(alias);
+            if candidate.exists() {
+                out.push(candidate.to_string_lossy().to_string());
+            }
+        }
+    }
+    out
+}
+
+#[cfg(not(target_os = "windows"))]
+fn find_fnm_multishell_candidates(_local_appdata: &str, _aliases: &[String]) -> Vec<String> {
+    Vec::new()
+}
+
+#[cfg(all(test, target_os = "windows"))]
+mod fnm_multishell_tests {
+    use super::find_fnm_multishell_candidates;
+    use std::fs;
+    use std::path::PathBuf;
+
+    #[test]
+    fn finds_candidates_in_subdirectories() {
+        let base = std::env::temp_dir().join(format!("any-code-fnm-test-{}", std::process::id()));
+        let local_appdata = base.to_string_lossy().to_string();
+
+        let multishells = base.join("fnm_multishells");
+        let d1 = multishells.join("d1");
+        let d2 = multishells.join("d2");
+        fs::create_dir_all(&d1).unwrap();
+        fs::create_dir_all(&d2).unwrap();
+
+        let f1 = d1.join("codex.cmd");
+        let f2 = d2.join("codex.cmd");
+        fs::write(&f1, "@echo off\r\necho codex\r\n").unwrap();
+        fs::write(&f2, "@echo off\r\necho codex\r\n").unwrap();
+
+        let aliases = vec!["codex.exe".to_string(), "codex.cmd".to_string(), "codex".to_string()];
+        let found = find_fnm_multishell_candidates(&local_appdata, &aliases);
+
+        let f1s = PathBuf::from(f1).to_string_lossy().to_string();
+        let f2s = PathBuf::from(f2).to_string_lossy().to_string();
+        assert!(found.iter().any(|p| p == &f1s));
+        assert!(found.iter().any(|p| p == &f2s));
+
+        let _ = fs::remove_dir_all(&base);
+    }
 }
 
 /// 按优先级 -> 版本降序选择最佳安装
