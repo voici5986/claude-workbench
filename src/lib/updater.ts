@@ -36,7 +36,7 @@ export interface CheckOptions {
 }
 
 export type CheckResult =
-  | { status: "up-to-date"; currentVersion: string }
+  | { status: "up-to-date"; currentVersion: string; skipped?: boolean }
   | { status: "available"; info: UpdateInfo; update: UpdateHandle }
   | { status: "error"; error: string };
 

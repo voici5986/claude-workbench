@@ -88,15 +88,20 @@ export function UpdateProvider({ children }: { children: React.ReactNode }) {
       return true; // 有更新
     } else {
       // up-to-date or error
-      if (result.status === "up-to-date" || result.status === "error") {
-         // 如果检查结果是没有更新或出错，清除之前的更新状态
-         // 注意：如果是 error，可能不应该清除旧的可用更新信息？
-         // 这里选择清除，因为我们无法确定之前的更新是否仍然有效
-         setHasUpdate(false);
-         setUpdateInfo(null);
-         setUpdateHandle(null);
-         setIsDismissed(false);
+      if (result.status === "up-to-date") {
+        // useUpdateCheck 里可能因为“5分钟内已检查过”而跳过检查：这种情况不应该清空已有的更新信息
+        if (result.skipped) {
+          return false;
+        }
+
+        // 如果确认为最新版本，清除之前的更新状态
+        setHasUpdate(false);
+        setUpdateInfo(null);
+        setUpdateHandle(null);
+        setIsDismissed(false);
       }
+
+      // error: 不清空旧的 updateInfo/hasUpdate，避免更新弹窗/提示在网络波动时自动消失
       return false;
     }
   }, [performCheck]);
