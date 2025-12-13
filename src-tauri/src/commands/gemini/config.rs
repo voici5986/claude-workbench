@@ -98,31 +98,15 @@ fn get_anycode_gemini_config_path() -> Result<PathBuf, String> {
 /// Load Gemini configuration from file
 pub fn load_gemini_config() -> Result<GeminiConfig, String> {
     let config_path = get_anycode_gemini_config_path()?;
-
-    if !config_path.exists() {
-        return Ok(GeminiConfig::default());
-    }
-
-    let content = fs::read_to_string(&config_path)
-        .map_err(|e| format!("Failed to read Gemini config: {}", e))?;
-
-    serde_json::from_str(&content).map_err(|e| format!("Failed to parse Gemini config: {}", e))
+    // 使用通用配置加载工具
+    crate::utils::config_utils::load_json_config(&config_path)
 }
 
 /// Save Gemini configuration to file
 pub fn save_gemini_config(config: &GeminiConfig) -> Result<(), String> {
     let config_path = get_anycode_gemini_config_path()?;
-
-    // Ensure parent directory exists
-    if let Some(parent) = config_path.parent() {
-        fs::create_dir_all(parent)
-            .map_err(|e| format!("Failed to create config directory: {}", e))?;
-    }
-
-    let content = serde_json::to_string_pretty(config)
-        .map_err(|e| format!("Failed to serialize Gemini config: {}", e))?;
-
-    fs::write(&config_path, content).map_err(|e| format!("Failed to write Gemini config: {}", e))
+    // 使用通用配置保存工具
+    crate::utils::config_utils::save_json_config(config, &config_path)
 }
 
 // ============================================================================

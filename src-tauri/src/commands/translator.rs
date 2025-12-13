@@ -557,32 +557,15 @@ fn get_claude_dir() -> Result<PathBuf, String> {
 /// 从文件加载翻译配置
 fn load_translation_config_from_file() -> Result<TranslationConfig, String> {
     let config_path = get_translation_config_path()?;
-
-    if !config_path.exists() {
-        info!("Translation config file not found, using default config");
-        return Ok(TranslationConfig::default());
-    }
-
-    let content = fs::read_to_string(&config_path)
-        .map_err(|e| format!("Failed to read translation config: {}", e))?;
-
-    let config: TranslationConfig = serde_json::from_str(&content)
-        .map_err(|e| format!("Failed to parse translation config: {}", e))?;
-
-    info!("Loaded translation config from file");
-    Ok(config)
+    // 使用通用配置加载工具
+    crate::utils::config_utils::load_json_config(&config_path)
 }
 
 /// 保存翻译配置到文件
 fn save_translation_config_to_file(config: &TranslationConfig) -> Result<(), String> {
     let config_path = get_translation_config_path()?;
-
-    let json_string = serde_json::to_string_pretty(config)
-        .map_err(|e| format!("Failed to serialize translation config: {}", e))?;
-
-    fs::write(&config_path, json_string)
-        .map_err(|e| format!("Failed to write translation config: {}", e))?;
-
+    // 使用通用配置保存工具
+    crate::utils::config_utils::save_json_config(config, &config_path)?;
     info!("Saved translation config to file: {:?}", config_path);
     Ok(())
 }

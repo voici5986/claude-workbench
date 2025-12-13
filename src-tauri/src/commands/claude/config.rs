@@ -790,27 +790,8 @@ pub async fn get_claude_execution_config(_app: AppHandle) -> Result<ClaudeExecut
         get_claude_dir().map_err(|e| format!("Failed to get Claude directory: {}", e))?;
     let config_file = claude_dir.join("execution_config.json");
 
-    if config_file.exists() {
-        match fs::read_to_string(&config_file) {
-            Ok(content) => match serde_json::from_str::<ClaudeExecutionConfig>(&content) {
-                Ok(config) => {
-                    log::info!("Loaded Claude execution config");
-                    Ok(config)
-                }
-                Err(e) => {
-                    log::warn!("Failed to parse execution config: {}, using default", e);
-                    Ok(ClaudeExecutionConfig::default())
-                }
-            },
-            Err(e) => {
-                log::warn!("Failed to read execution config: {}, using default", e);
-                Ok(ClaudeExecutionConfig::default())
-            }
-        }
-    } else {
-        log::info!("No execution config file found, using default");
-        Ok(ClaudeExecutionConfig::default())
-    }
+    // 使用通用配置加载工具
+    crate::utils::config_utils::load_json_config(&config_file)
 }
 
 /// 更新Claude执行配置
@@ -823,11 +804,8 @@ pub async fn update_claude_execution_config(
         get_claude_dir().map_err(|e| format!("Failed to get Claude directory: {}", e))?;
     let config_file = claude_dir.join("execution_config.json");
 
-    let json_string = serde_json::to_string_pretty(&config)
-        .map_err(|e| format!("Failed to serialize config: {}", e))?;
-
-    fs::write(&config_file, json_string)
-        .map_err(|e| format!("Failed to write config file: {}", e))?;
+    // 使用通用配置保存工具
+    crate::utils::config_utils::save_json_config(&config, &config_file)?;
 
     log::info!("Updated Claude execution config");
     Ok(())

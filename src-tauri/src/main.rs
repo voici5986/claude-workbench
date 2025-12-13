@@ -4,6 +4,7 @@
 mod claude_binary;
 mod commands;
 mod process;
+mod utils; // 新增：通用工具模块
 
 // MCP 多应用支持模块
 mod mcp;
