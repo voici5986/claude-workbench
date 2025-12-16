@@ -54,23 +54,23 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
 
   // ============================================================================
   // Codex Models (OpenAI)
-  // Source: https://openrouter.ai/openai/ (2025-12 实际定价)
+  // Source: https://platform.openai.com/docs/pricing (2025-12 官方定价)
   // Note: Codex 使用 ChatGPT 订阅时按会话限制计费，API Key 用户按 token 计费
   // ============================================================================
 
   // GPT-5.1-Codex 系列 - Codex CLI 主要使用的模型
   // Context: 400K tokens
   'gpt-5.1-codex': {
-    input: 1.25,      // $1.25 / 1M input tokens
+    input: 1.25,      // $1.25 / 1M input tokens (Standard tier)
     output: 10.00,    // $10.00 / 1M output tokens
-    cacheWrite: 1.5625, // input * 1.25
-    cacheRead: 0.125   // input * 0.1
+    cacheWrite: 1.5625, // input * 1.25 (estimated)
+    cacheRead: 0.125   // 官方: $0.125 cached input
   },
   'gpt-5.1-codex-mini': {
     input: 0.25,      // $0.25 / 1M input tokens
     output: 2.00,     // $2.00 / 1M output tokens
     cacheWrite: 0.3125,
-    cacheRead: 0.025
+    cacheRead: 0.025   // 官方: $0.025 cached input
   },
   'gpt-5.1-codex-max': {
     input: 1.25,      // $1.25 / 1M input tokens (same as base)
@@ -78,14 +78,28 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
     cacheWrite: 1.5625,
     cacheRead: 0.125
   },
+  // codex-mini-latest - 默认 Codex CLI 模型
+  'codex-mini-latest': {
+    input: 1.50,      // $1.50 / 1M input tokens (官方定价)
+    output: 6.00,     // $6.00 / 1M output tokens
+    cacheWrite: 1.875,
+    cacheRead: 0.375   // 官方: $0.375 cached input
+  },
+  // gpt-5-codex 别名
+  'gpt-5-codex': {
+    input: 1.25,
+    output: 10.00,
+    cacheWrite: 1.5625,
+    cacheRead: 0.125
+  },
 
   // GPT-5.2 系列 - 最新模型
   // Context: 400K tokens, Max Output: 128K tokens
   'gpt-5.2': {
-    input: 1.75,      // $1.75 / 1M input tokens
+    input: 1.75,      // $1.75 / 1M input tokens (Standard tier)
     output: 14.00,    // $14.00 / 1M output tokens
     cacheWrite: 2.1875,
-    cacheRead: 0.175
+    cacheRead: 0.175   // 官方: $0.175 cached input
   },
   // GPT-5.2 variants (Instant, Thinking, Pro) - 同定价
   'gpt-5.2-instant': {
@@ -108,11 +122,12 @@ export const MODEL_PRICING: Record<string, ModelPricing> = {
   },
 
   // o4-mini (Codex 底层模型之一)
+  // Source: https://platform.openai.com/docs/pricing
   'o4-mini': {
-    input: 1.10,
-    output: 4.40,
+    input: 1.10,      // $1.10 / 1M input tokens (Standard tier)
+    output: 4.40,     // $4.40 / 1M output tokens
     cacheWrite: 1.375,
-    cacheRead: 0.11
+    cacheRead: 0.275   // 官方: $0.275 cached input
   },
 
   // ============================================================================
@@ -189,9 +204,19 @@ export function getPricingForModel(model?: string, engine?: string): ModelPricin
     return MODEL_PRICING['o4-mini'];
   }
 
-  // 通用 Codex 匹配 - 默认使用 gpt-5.1-codex
+  // codex-mini-latest - 默认 CLI 模型
+  if (normalized.includes('codex-mini-latest') || normalized.includes('codex_mini_latest')) {
+    return MODEL_PRICING['codex-mini-latest'];
+  }
+
+  // gpt-5-codex (别名)
+  if (normalized.includes('gpt-5-codex') || normalized.includes('gpt_5_codex')) {
+    return MODEL_PRICING['gpt-5-codex'];
+  }
+
+  // 通用 Codex 匹配 - 默认使用 codex-mini-latest
   if (normalized.includes('codex')) {
-    return MODEL_PRICING['gpt-5.1-codex'];
+    return MODEL_PRICING['codex-mini-latest'];
   }
 
   // ============================================================================
@@ -227,7 +252,7 @@ export function getPricingForModel(model?: string, engine?: string): ModelPricin
 
   // Codex 引擎使用 Codex 默认定价
   if (engine === 'codex') {
-    return MODEL_PRICING['codex-mini'];
+    return MODEL_PRICING['codex-mini-latest'];
   }
 
   // Unknown model - use default

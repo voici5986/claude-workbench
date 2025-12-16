@@ -35,7 +35,7 @@ interface MutableBillingEvent extends BillingEvent {
 }
 
 const MODEL_FALLBACK = 'claude-sonnet-4.5';
-const CODEX_MODEL_FALLBACK = 'codex-mini';
+const CODEX_MODEL_FALLBACK = 'codex-mini-latest';
 
 /**
  * 检测消息的引擎类型

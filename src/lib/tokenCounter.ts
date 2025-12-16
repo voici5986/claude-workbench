@@ -102,7 +102,7 @@ export const CLAUDE_CONTEXT_WINDOWS = {
 
 // ============================================================================
 // Codex Model Context Windows
-// Source: https://openrouter.ai/openai/ (2025-12 实际数据)
+// Source: https://platform.openai.com/docs/pricing (2025-12 官方数据)
 // ============================================================================
 
 export const CODEX_CONTEXT_WINDOWS = {
@@ -111,6 +111,10 @@ export const CODEX_CONTEXT_WINDOWS = {
   'gpt-5.1-codex': 400000,
   'gpt-5.1-codex-mini': 400000,
   'gpt-5.1-codex-max': 400000,
+  'gpt-5-codex': 400000,
+  // codex-mini-latest - 默认 Codex CLI 模型
+  // 200K context window
+  'codex-mini-latest': 200000,
   // GPT-5.2 系列 - 最新模型
   // 400K context, 128K max output
   'gpt-5.2': 400000,
@@ -119,8 +123,8 @@ export const CODEX_CONTEXT_WINDOWS = {
   'gpt-5.2-pro': 400000,
   // o4-mini (Codex 底层模型)
   'o4-mini': 128000,
-  // 默认值
-  'default': 400000,
+  // 默认值 - 使用 codex-mini-latest 的窗口大小
+  'default': 200000,
 } as const;
 
 /**
@@ -171,9 +175,19 @@ export function getContextWindowSize(model?: string, engine?: string): number {
       return CODEX_CONTEXT_WINDOWS['o4-mini'];
     }
 
-    // 通用 Codex 匹配 - 默认使用 gpt-5.1-codex
+    // codex-mini-latest - 默认 CLI 模型
+    if (lowerModel.includes('codex-mini-latest') || lowerModel.includes('codex_mini_latest')) {
+      return CODEX_CONTEXT_WINDOWS['codex-mini-latest'];
+    }
+
+    // gpt-5-codex (别名)
+    if (lowerModel.includes('gpt-5-codex') || lowerModel.includes('gpt_5_codex')) {
+      return CODEX_CONTEXT_WINDOWS['gpt-5-codex'];
+    }
+
+    // 通用 Codex 匹配 - 默认使用 codex-mini-latest (200K)
     if (lowerModel.includes('codex')) {
-      return CODEX_CONTEXT_WINDOWS['gpt-5.1-codex'];
+      return CODEX_CONTEXT_WINDOWS['codex-mini-latest'];
     }
 
     return CODEX_CONTEXT_WINDOWS['default'];

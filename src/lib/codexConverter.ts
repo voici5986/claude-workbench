@@ -139,6 +139,11 @@ export class CodexEventConverter {
           this.currentTurnUsage = event.usage;
           return this.createUsageMessage(event.usage, event.timestamp);
 
+        case 'thread_token_usage_updated':
+          // 累计 token 使用量更新事件 - 这是关键的累计追踪事件
+          // 参考: https://hexdocs.pm/codex_sdk/05-api-reference.html
+          return this.createCumulativeUsageMessage(event, event.timestamp);
+
         case 'turn.failed':
           return this.createErrorMessage(event.error.message, event.timestamp);
 
@@ -969,6 +974,44 @@ export class CodexEventConverter {
       receivedAt: ts,
       engine: 'codex' as const,
       usage,
+    };
+  }
+
+  /**
+   * Creates a cumulative usage message from thread_token_usage_updated event
+   * This event provides CUMULATIVE token counts for the entire session
+   * Reference: https://hexdocs.pm/codex_sdk/05-api-reference.html
+   */
+  private createCumulativeUsageMessage(event: any, eventTimestamp?: string): ClaudeStreamMessage {
+    const ts = eventTimestamp || new Date().toISOString();
+    const usage = event.usage || {};
+
+    // 标准化 usage 数据
+    const normalizedUsage = {
+      input_tokens: usage.input_tokens || 0,
+      cached_input_tokens: usage.cached_input_tokens || 0,
+      output_tokens: usage.output_tokens || 0,
+    };
+
+    // 更新当前 turn 的 usage（用于费用计算）
+    this.currentTurnUsage = normalizedUsage;
+
+    return {
+      type: 'assistant',  // 使用 assistant 类型以便被费用计算捕获
+      message: {
+        role: 'assistant',
+        content: [],
+      },
+      timestamp: ts,
+      receivedAt: ts,
+      engine: 'codex' as const,
+      usage: normalizedUsage,  // 顶层 usage 供 tokenExtractor 提取
+      codexMetadata: {
+        codexItemType: 'thread_token_usage_updated',
+        codexItemId: `usage_${Date.now()}`,
+        threadId: event.thread_id,
+        usage: normalizedUsage,
+      },
     };
   }
 
