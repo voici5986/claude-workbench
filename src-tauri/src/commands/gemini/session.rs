@@ -9,13 +9,14 @@ use tauri::{AppHandle, Emitter, Manager};
 use tokio::io::{AsyncBufReadExt, BufReader};
 use tokio::process::Command;
 use tokio::sync::OnceCell;
+use tokio::time::{sleep, Duration};
 
-use super::config::{build_gemini_env, load_gemini_config};
+use super::config::{build_gemini_env, load_gemini_config, read_session_detail};
 use super::parser::{
     convert_raw_to_unified_message, convert_to_unified_message, parse_gemini_line,
     parse_gemini_line_flexible,
 };
-use super::types::{GeminiExecutionOptions, GeminiInstallStatus, GeminiProcessState};
+use super::types::{GeminiExecutionOptions, GeminiInstallStatus, GeminiProcessState, GeminiSessionDetail, TokenUsage};
 use crate::claude_binary::detect_binary_for_tool;
 use crate::commands::claude::apply_no_window_async;
 use crate::commands::wsl_utils;
@@ -23,6 +24,74 @@ use crate::commands::wsl_utils;
 /// 全局 Gemini 安装状态缓存
 /// 避免重复创建 WSL 进程检测安装状态
 static GEMINI_INSTALL_STATUS_CACHE: OnceCell<GeminiInstallStatus> = OnceCell::const_new();
+
+fn token_usage_has_data(usage: &TokenUsage) -> bool {
+    usage.prompt_token_count.unwrap_or(0) > 0
+        || usage.candidates_token_count.unwrap_or(0) > 0
+        || usage.total_token_count.unwrap_or(0) > 0
+        || usage.cached_content_token_count.unwrap_or(0) > 0
+        || usage.thoughts_token_count.unwrap_or(0) > 0
+        || usage.tool_use_prompt_token_count.unwrap_or(0) > 0
+}
+
+fn extract_latest_token_usage(detail: &GeminiSessionDetail) -> Option<TokenUsage> {
+    for msg in detail.messages.iter().rev() {
+        // Prefer assistant-side entries in history files (type: "gemini")
+        let msg_type = msg.get("type").and_then(|v| v.as_str());
+        if msg_type != Some("gemini") {
+            continue;
+        }
+
+        let candidates = [
+            msg.get("tokens"),
+            msg.get("usageMetadata"),
+            msg.get("usage_metadata"),
+            msg.get("usage"),
+        ];
+
+        for candidate in candidates.into_iter().flatten() {
+            if let Ok(usage) = serde_json::from_value::<TokenUsage>(candidate.clone()) {
+                if token_usage_has_data(&usage) {
+                    return Some(usage);
+                }
+            }
+        }
+    }
+
+    None
+}
+
+async fn try_load_latest_session_token_usage(
+    project_path: &str,
+    session_id: &str,
+) -> Option<TokenUsage> {
+    // The CLI may flush history slightly after emitting the final result event.
+    // Retry a few times to maximize consistency between streaming and history loading.
+    const MAX_ATTEMPTS: usize = 6;
+
+    for attempt in 0..MAX_ATTEMPTS {
+        let project_path = project_path.to_string();
+        let session_id = session_id.to_string();
+
+        let detail = tokio::task::spawn_blocking(move || read_session_detail(&project_path, &session_id).ok())
+            .await
+            .ok()
+            .flatten();
+
+        if let Some(detail) = detail {
+            if let Some(usage) = extract_latest_token_usage(&detail) {
+                return Some(usage);
+            }
+        }
+
+        // Backoff (skip sleep after the last attempt)
+        if attempt + 1 < MAX_ATTEMPTS {
+            sleep(Duration::from_millis(150)).await;
+        }
+    }
+
+    None
+}
 
 // ============================================================================
 // Binary Detection
@@ -600,9 +669,11 @@ async fn execute_gemini_process(
 
     // Spawn task to read stdout (JSONL events)
     let model_for_messages = model.clone();
+    let project_path_for_usage = project_path.clone();
     tokio::spawn(async move {
         let mut reader = BufReader::new(stdout).lines();
         let mut real_cli_session_id_emitted = false;
+        let mut real_cli_session_id: Option<String> = None;
         // Track tool calls to enrich tool_result payloads (e.g., read_file returning empty output)
         let mut tool_calls: std::collections::HashMap<String, (String, serde_json::Value)> =
             std::collections::HashMap::new();
@@ -624,6 +695,7 @@ async fn execute_gemini_process(
                         ..
                     } = event
                     {
+                        real_cli_session_id = Some(cli_session_id.clone());
                         // Emit the real Gemini CLI session ID to frontend
                         log::info!("[Gemini] Detected real CLI session ID: {}", cli_session_id);
                         let cli_session_payload = serde_json::json!({
@@ -636,6 +708,25 @@ async fn execute_gemini_process(
                             log::error!("Failed to emit gemini-cli-session-id: {}", e);
                         }
                         real_cli_session_id_emitted = true;
+                    }
+                }
+
+                // Ensure result events have usageMetadata (cache/thoughts/tool breakdown) when available in history.
+                if let super::types::GeminiStreamEvent::Result {
+                    usage_metadata, ..
+                } = &mut event
+                {
+                    if usage_metadata.is_none() {
+                        if let Some(ref cli_session_id) = real_cli_session_id {
+                            if let Some(enriched) = try_load_latest_session_token_usage(
+                                &project_path_for_usage,
+                                cli_session_id,
+                            )
+                            .await
+                            {
+                                *usage_metadata = Some(enriched);
+                            }
+                        }
                     }
                 }
 
@@ -727,6 +818,7 @@ async fn execute_gemini_process(
                     if raw.get("type").and_then(|t| t.as_str()) == Some("init") {
                         if let Some(cli_session_id) = raw.get("session_id").and_then(|s| s.as_str())
                         {
+                            real_cli_session_id = Some(cli_session_id.to_string());
                             log::info!(
                                 "[Gemini] Detected real CLI session ID (raw): {}",
                                 cli_session_id
