@@ -123,9 +123,15 @@ pub struct CodexSession {
     pub last_message_timestamp: Option<String>,
 }
 
+/// Codex process handle with PID for proper cleanup
+pub struct CodexProcessHandle {
+    pub child: Child,
+    pub pid: u32,
+}
+
 /// Global state to track Codex processes
 pub struct CodexProcessState {
-    pub processes: Arc<Mutex<HashMap<String, Child>>>,
+    pub processes: Arc<Mutex<HashMap<String, CodexProcessHandle>>>,
     pub last_session_id: Arc<Mutex<Option<String>>>,
 }
 
@@ -205,6 +211,8 @@ pub async fn resume_last_codex(
 /// Cancels a running Codex execution
 #[tauri::command]
 pub async fn cancel_codex(session_id: Option<String>, app_handle: AppHandle) -> Result<(), String> {
+    use crate::commands::claude::kill_process_tree;
+
     log::info!("cancel_codex called for session: {:?}", session_id);
 
     let state: tauri::State<'_, CodexProcessState> = app_handle.state();
@@ -212,22 +220,38 @@ pub async fn cancel_codex(session_id: Option<String>, app_handle: AppHandle) -> 
 
     if let Some(sid) = session_id {
         // Cancel specific session
-        if let Some(mut child) = processes.remove(&sid) {
-            child
-                .kill()
-                .await
-                .map_err(|e| format!("Failed to kill process: {}", e))?;
-            log::info!("Killed Codex process for session: {}", sid);
+        if let Some(handle) = processes.remove(&sid) {
+            let pid = handle.pid;
+            log::info!("Killing Codex process tree for session: {} (PID: {})", sid, pid);
+
+            // Kill the entire process tree (parent + all children)
+            if let Err(e) = kill_process_tree(pid) {
+                log::error!("Failed to kill process tree for session {}: {}", sid, e);
+                // Fallback: try to kill main process directly
+                let mut child = handle.child;
+                if let Err(e2) = child.kill().await {
+                    log::error!("Fallback kill also failed: {}", e2);
+                }
+            } else {
+                log::info!("Successfully killed Codex process tree for session: {}", sid);
+            }
         } else {
             log::warn!("No running process found for session: {}", sid);
         }
     } else {
         // Cancel all processes
-        for (sid, mut child) in processes.drain() {
-            if let Err(e) = child.kill().await {
-                log::error!("Failed to kill process for session {}: {}", sid, e);
+        for (sid, handle) in processes.drain() {
+            let pid = handle.pid;
+            log::info!("Killing Codex process tree for session: {} (PID: {})", sid, pid);
+
+            if let Err(e) = kill_process_tree(pid) {
+                log::error!("Failed to kill process tree for session {}: {}", sid, e);
+                let mut child = handle.child;
+                if let Err(e2) = child.kill().await {
+                    log::error!("Fallback kill also failed: {}", e2);
+                }
             } else {
-                log::info!("Killed Codex process for session: {}", sid);
+                log::info!("Successfully killed Codex process tree for session: {}", sid);
             }
         }
     }
@@ -792,6 +816,12 @@ async fn execute_codex_process(
         .spawn()
         .map_err(|e| format!("Failed to spawn codex: {}", e))?;
 
+    // Get process PID for proper cleanup (needed to kill child processes)
+    let pid = child
+        .id()
+        .ok_or("Failed to get process ID - process may have already exited")?;
+    log::info!("[Codex] Spawned process with PID: {}", pid);
+
     // FIX: Write prompt to stdin if provided
     // This avoids command line length limits and special character issues
     if let Some(prompt_text) = prompt {
@@ -821,11 +851,12 @@ async fn execute_codex_process(
     // Generate session ID for tracking
     let session_id = format!("codex-{}", uuid::Uuid::new_v4());
 
-    // Store process in state
+    // Store process in state with PID for proper cleanup
     let state: tauri::State<'_, CodexProcessState> = app_handle.state();
     {
         let mut processes = state.processes.lock().await;
-        processes.insert(session_id.clone(), child);
+        let handle = CodexProcessHandle { child, pid };
+        processes.insert(session_id.clone(), handle);
 
         let mut last_session = state.last_session_id.lock().await;
         *last_session = Some(session_id.clone());
@@ -852,7 +883,7 @@ async fn execute_codex_process(
 
     // 🔧 FIX: Use channels to track stdout/stderr closure for timeout detection
     let (stdout_done_tx, stdout_done_rx) = tokio::sync::oneshot::channel();
-    let (stderr_done_tx, stderr_done_rx) = tokio::sync::oneshot::channel();
+    let (stderr_done_tx, _stderr_done_rx) = tokio::sync::oneshot::channel();
 
     // Spawn task to read stdout (JSONL events)
     // FIX: Emit to both session-specific and global channels for proper multi-tab isolation
@@ -896,7 +927,10 @@ async fn execute_codex_process(
     // Spawn task to wait for process completion
     // 🔧 FIX: Only wait for stdout to close, then send completion event immediately
     // stderr may continue outputting logs (MCP servers, etc.) for a long time
+    let pid_for_cleanup = pid; // Copy PID for cleanup task
     tokio::spawn(async move {
+        use crate::commands::claude::kill_process_tree;
+
         let state: tauri::State<'_, CodexProcessState> = app_handle_complete.state();
 
         // Only wait for stdout to close (stderr can continue logging)
@@ -927,8 +961,8 @@ async fn execute_codex_process(
         loop {
             let mut processes = state.processes.lock().await;
 
-            if let Some(child) = processes.get_mut(&session_id_complete) {
-                match child.try_wait() {
+            if let Some(handle) = processes.get_mut(&session_id_complete) {
+                match handle.child.try_wait() {
                     Ok(Some(status)) => {
                         log::info!("[Codex] Process exited with status: {}", status);
                         processes.remove(&session_id_complete);
@@ -938,12 +972,21 @@ async fn execute_codex_process(
                         // Check timeout
                         if start_time.elapsed() > timeout_duration {
                             log::warn!(
-                                "[Codex] Process {} did not exit within {}s after stdout closed, force killing",
+                                "[Codex] Process {} (PID: {}) did not exit within {}s after stdout closed, force killing process tree",
                                 session_id_complete,
+                                pid_for_cleanup,
                                 timeout_duration.as_secs()
                             );
-                            if let Err(e) = child.kill().await {
-                                log::error!("[Codex] Failed to kill process: {}", e);
+
+                            // 🔧 FIX: Kill entire process tree to prevent orphan child processes
+                            if let Err(e) = kill_process_tree(pid_for_cleanup) {
+                                log::error!("[Codex] Failed to kill process tree: {}", e);
+                                // Fallback: try to kill main process directly
+                                if let Err(e2) = handle.child.kill().await {
+                                    log::error!("[Codex] Fallback kill also failed: {}", e2);
+                                }
+                            } else {
+                                log::info!("[Codex] Successfully killed process tree for PID: {}", pid_for_cleanup);
                             }
                             processes.remove(&session_id_complete);
                             break;

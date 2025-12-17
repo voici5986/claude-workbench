@@ -27,7 +27,7 @@ pub use self::config::{
 pub use self::hooks::{get_hooks_config, update_hooks_config, validate_hook_command};
 use self::project_store::ProjectStore;
 pub use file_ops::{list_directory_contents, search_files};
-pub use platform::apply_no_window_async;
+pub use platform::{apply_no_window_async, kill_process_tree};
 // Agent functionality removed
 
 #[tauri::command]
