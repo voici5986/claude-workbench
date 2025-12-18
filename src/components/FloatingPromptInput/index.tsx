@@ -640,6 +640,7 @@ const FloatingPromptInputInner = (
             onSlashCommandMenuClose={closeSlashCommandMenu}
             onSlashCommandSelectedIndexChange={setSlashCommandSelectedIndex}
             customSlashCommands={customCommands}
+            engine={currentEngine}
           />
 
           <ControlBar

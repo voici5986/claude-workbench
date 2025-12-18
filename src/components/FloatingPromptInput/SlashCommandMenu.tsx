@@ -14,6 +14,10 @@ import {
   filterSlashCommands,
   groupCommandsByCategory,
 } from './slashCommands';
+import { GEMINI_BUILT_IN_SLASH_COMMANDS } from './geminiSlashCommands';
+
+/** 执行引擎类型 */
+type ExecutionEngine = 'claude' | 'gemini' | 'codex';
 
 interface SlashCommandMenuProps {
   /** 是否显示菜单 */
@@ -34,6 +38,8 @@ interface SlashCommandMenuProps {
   customCommands?: SlashCommand[];
   /** 菜单位置 */
   position?: { top: number; left: number };
+  /** 执行引擎类型 (默认 claude) */
+  engine?: ExecutionEngine;
 }
 
 /**
@@ -68,14 +74,30 @@ export const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
   nonInteractiveOnly = true,
   customCommands = [],
   position,
+  engine = 'claude',
 }) => {
   const menuRef = useRef<HTMLDivElement>(null);
   const selectedItemRef = useRef<HTMLDivElement>(null);
 
+  // 根据引擎选择内置命令列表
+  const builtInCommands = useMemo(() => {
+    switch (engine) {
+      case 'gemini':
+        return GEMINI_BUILT_IN_SLASH_COMMANDS;
+      case 'claude':
+        return BUILT_IN_SLASH_COMMANDS;
+      case 'codex':
+        // Codex 暂不支持非交互式斜杠命令
+        return [];
+      default:
+        return BUILT_IN_SLASH_COMMANDS;
+    }
+  }, [engine]);
+
   // 合并内置命令和自定义命令
   const allCommands = useMemo(() => {
-    return [...BUILT_IN_SLASH_COMMANDS, ...customCommands];
-  }, [customCommands]);
+    return [...builtInCommands, ...customCommands];
+  }, [builtInCommands, customCommands]);
 
   // 过滤命令
   const filteredCommands = useMemo(() => {

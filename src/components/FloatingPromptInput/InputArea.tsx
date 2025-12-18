@@ -11,6 +11,9 @@ import { SlashCommandMenu } from "./SlashCommandMenu";
 import type { PromptSuggestion } from "./hooks/usePromptSuggestion";
 import type { SlashCommand } from "./slashCommands";
 
+/** 执行引擎类型 */
+type ExecutionEngine = 'claude' | 'gemini' | 'codex';
+
 interface InputAreaProps {
   prompt: string;
   disabled?: boolean;
@@ -51,6 +54,8 @@ interface InputAreaProps {
   onSlashCommandSelectedIndexChange?: (index: number) => void;
   /** 自定义斜杠命令 */
   customSlashCommands?: SlashCommand[];
+  /** 执行引擎类型 (默认 claude) */
+  engine?: ExecutionEngine;
 }
 
 export const InputArea = forwardRef<HTMLTextAreaElement, InputAreaProps>(({
@@ -83,6 +88,7 @@ export const InputArea = forwardRef<HTMLTextAreaElement, InputAreaProps>(({
   onSlashCommandMenuClose,
   onSlashCommandSelectedIndexChange,
   customSlashCommands = [],
+  engine = 'claude',
 }, ref) => {
   const { t } = useTranslation();
 
@@ -167,6 +173,7 @@ export const InputArea = forwardRef<HTMLTextAreaElement, InputAreaProps>(({
           onSelectedIndexChange={onSlashCommandSelectedIndexChange}
           customCommands={customSlashCommands}
           nonInteractiveOnly={true}
+          engine={engine}
         />
       )}
     </div>
