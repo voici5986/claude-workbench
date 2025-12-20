@@ -11,6 +11,7 @@ import { formatDuration } from "@/lib/pricing";
 import { ExecutionEngineSelector, type ExecutionEngineConfig } from "@/components/ExecutionEngineSelector";
 import { ModelSelector } from "./ModelSelector";
 import { CodexModelSelector } from "./CodexModelSelector";
+import { CodexReasoningLevelSelector, type CodexReasoningLevel } from "./CodexReasoningLevelSelector";
 import { CodexRateLimitBadge } from "./CodexRateLimitBadge";
 import { GeminiModelSelector } from "./GeminiModelSelector";
 import { ThinkingModeToggle } from "./ThinkingModeToggle";
@@ -164,6 +165,14 @@ export const ControlBar: React.FC<ControlBarProps> = ({
             onModelChange={(model) => setExecutionEngineConfig({
               ...executionEngineConfig,
               codexModel: model,
+            })}
+            disabled={disabled}
+          />
+          <CodexReasoningLevelSelector
+            selectedLevel={executionEngineConfig.codexReasoningLevel}
+            onLevelChange={(level: CodexReasoningLevel) => setExecutionEngineConfig({
+              ...executionEngineConfig,
+              codexReasoningLevel: level,
             })}
             disabled={disabled}
           />

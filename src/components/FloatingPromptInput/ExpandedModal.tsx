@@ -10,6 +10,7 @@ import { ImagePreview } from "../ImagePreview";
 import { ExecutionEngineSelector, type ExecutionEngineConfig } from "@/components/ExecutionEngineSelector";
 import { ModelSelector } from "./ModelSelector";
 import { CodexModelSelector } from "./CodexModelSelector";
+import { CodexReasoningLevelSelector, type CodexReasoningLevel } from "./CodexReasoningLevelSelector";
 import { GeminiModelSelector } from "./GeminiModelSelector";
 import { ThinkingModeToggle } from "./ThinkingModeToggle";
 import { PlanModeToggle } from "./PlanModeToggle";
@@ -266,14 +267,24 @@ export const ExpandedModal = forwardRef<HTMLTextAreaElement, ExpandedModalProps>
 
             {/* Codex-specific controls */}
             {executionEngineConfig.engine === 'codex' && (
-              <CodexModelSelector
-                selectedModel={executionEngineConfig.codexModel}
-                onModelChange={(model) => setExecutionEngineConfig({
-                  ...executionEngineConfig,
-                  codexModel: model,
-                })}
-                disabled={disabled}
-              />
+              <>
+                <CodexModelSelector
+                  selectedModel={executionEngineConfig.codexModel}
+                  onModelChange={(model) => setExecutionEngineConfig({
+                    ...executionEngineConfig,
+                    codexModel: model,
+                  })}
+                  disabled={disabled}
+                />
+                <CodexReasoningLevelSelector
+                  selectedLevel={executionEngineConfig.codexReasoningLevel}
+                  onLevelChange={(level: CodexReasoningLevel) => setExecutionEngineConfig({
+                    ...executionEngineConfig,
+                    codexReasoningLevel: level,
+                  })}
+                  disabled={disabled}
+                />
+              </>
             )}
 
             {/* Gemini-specific controls */}

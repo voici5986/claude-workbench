@@ -1,5 +1,5 @@
 import React from "react";
-import { ChevronUp, Check, Star, Sparkles, Brain, Cpu, Rocket } from "lucide-react";
+import { ChevronUp, Check, Star, Brain, Cpu, Rocket } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Popover } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
@@ -26,13 +26,6 @@ export const CODEX_MODELS: CodexModelConfig[] = [
     description: '最新代码模型（2025年12月18日发布）',
     icon: <Rocket className="h-4 w-4 text-emerald-500" />,
     isDefault: true,
-  },
-  {
-    id: 'gpt-5.2-pro',
-    name: 'GPT-5.2 Pro',
-    description: '最强推理模型，适合复杂任务',
-    icon: <Sparkles className="h-4 w-4 text-purple-500" />,
-    isDefault: false,
   },
   {
     id: 'gpt-5.2',
