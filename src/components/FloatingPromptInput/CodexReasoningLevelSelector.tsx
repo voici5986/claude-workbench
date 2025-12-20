@@ -10,7 +10,8 @@ import { api } from "@/lib/api";
  * Based on OpenAI's reasoning_effort parameter for o1/o3 models
  * Reference: https://platform.openai.com/docs/guides/reasoning
  */
-export type CodexReasoningLevel = 'low' | 'medium' | 'high' | 'extra_high';
+/** Reasoning level values used in config.toml (model_reasoning_effort) */
+export type CodexReasoningLevel = 'low' | 'medium' | 'high' | 'xhigh';
 
 export interface CodexReasoningLevelConfig {
   id: CodexReasoningLevel;
@@ -55,12 +56,12 @@ export const CODEX_REASONING_LEVELS: CodexReasoningLevelConfig[] = [
     configValue: 'high',
   },
   {
-    id: 'extra_high',
+    id: 'xhigh',
     name: '极高',
     description: '最大推理深度，适合复杂任务',
     icon: <Rocket className="h-4 w-4 text-red-500" />,
     isDefault: false,
-    configValue: 'extra_high',
+    configValue: 'xhigh',
   },
 ];
 

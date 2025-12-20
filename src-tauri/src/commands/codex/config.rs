@@ -1443,10 +1443,11 @@ pub async fn update_codex_reasoning_level(level: String) -> Result<String, Strin
     log::info!("[Codex] Updating reasoning level to: {}", level);
 
     // Validate level
-    let valid_levels = ["low", "medium", "high", "extra_high"];
+    // Note: 'xhigh' is used in config.toml for extra high reasoning level
+    let valid_levels = ["low", "medium", "high", "xhigh"];
     if !valid_levels.contains(&level.as_str()) {
         return Err(format!(
-            "Invalid reasoning level: {}. Valid values are: low, medium, high, extra_high",
+            "Invalid reasoning level: {}. Valid values are: low, medium, high, xhigh",
             level
         ));
     }

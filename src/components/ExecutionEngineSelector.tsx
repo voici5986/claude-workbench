@@ -36,8 +36,8 @@ export interface ExecutionEngineConfig {
   codexMode?: CodexExecutionMode;
   codexModel?: string;
   codexApiKey?: string;
-  /** Codex reasoning effort level: low, medium, high, extra_high */
-  codexReasoningLevel?: 'low' | 'medium' | 'high' | 'extra_high';
+  /** Codex reasoning effort level: low, medium, high, xhigh */
+  codexReasoningLevel?: 'low' | 'medium' | 'high' | 'xhigh';
   // Gemini-specific config
   geminiModel?: string;
   geminiApprovalMode?: 'auto_edit' | 'yolo' | 'default';
