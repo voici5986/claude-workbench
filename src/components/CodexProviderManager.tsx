@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -30,6 +30,7 @@ import {
   getCategoryKey,
 } from '@/config/codexProviderPresets';
 import { useTranslation } from "@/hooks/useTranslation";
+import { SortableList } from '@/components/ui/sortable-list';
 
 interface CodexProviderManagerProps {
   onBack?: () => void;
@@ -266,6 +267,22 @@ export default function CodexProviderManager({ onBack }: CodexProviderManagerPro
     return `${start}${'*'.repeat(Math.min(token.length - 12, 20))}${end}`;
   };
 
+  // 处理拖拽排序（仅对自定义预设生效）
+  const handleReorder = useCallback(async (reorderedPresets: CodexProviderConfig[]) => {
+    setPresets(reorderedPresets);
+    try {
+      // 只保存自定义预设的顺序
+      const customIds = reorderedPresets.filter(p => 'createdAt' in p).map(p => p.id);
+      if (customIds.length > 0) {
+        await api.reorderCodexProviderConfigs(customIds);
+      }
+    } catch (error) {
+      console.error('Failed to reorder Codex providers:', error);
+      setToastMessage({ message: t('provider.reorderFailed'), type: 'error' });
+      loadData();
+    }
+  }, [t]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -349,8 +366,12 @@ export default function CodexProviderManager({ onBack }: CodexProviderManagerPro
               </div>
             </div>
           ) : (
-            presets.map((config) => (
-              <Card key={config.id} className={`p-4 ${isCurrentProvider(config) ? 'ring-2 ring-primary' : ''}`}>
+            <SortableList
+              items={presets}
+              onReorder={handleReorder}
+              isItemDisabled={(config) => isBuiltInPreset(config)}
+              renderItem={(config) => (
+              <Card className={`p-4 ${isCurrentProvider(config) ? 'ring-2 ring-primary' : ''}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-2">
@@ -480,7 +501,8 @@ export default function CodexProviderManager({ onBack }: CodexProviderManagerPro
                   </div>
                 </div>
               </Card>
-            ))
+              )}
+            />
           )}
 
           {/* Toggle tokens visibility */}

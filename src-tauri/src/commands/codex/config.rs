@@ -1377,6 +1377,47 @@ pub async fn delete_codex_provider_config(id: String) -> Result<String, String> 
     Ok(format!("Successfully deleted Codex provider: {}", id))
 }
 
+/// Reorder Codex provider configurations
+#[tauri::command]
+pub async fn reorder_codex_provider_configs(ids: Vec<String>) -> Result<String, String> {
+    log::info!("[Codex Provider] Reordering providers");
+
+    let providers_path = get_codex_providers_path()?;
+
+    if !providers_path.exists() {
+        return Ok("No providers to reorder".to_string());
+    }
+
+    let content = fs::read_to_string(&providers_path)
+        .map_err(|e| format!("Failed to read providers.json: {}", e))?;
+    let providers: Vec<CodexProviderConfig> = serde_json::from_str(&content)
+        .map_err(|e| format!("Failed to parse providers.json: {}", e))?;
+
+    // Reorder based on provided IDs
+    let mut reordered: Vec<CodexProviderConfig> = Vec::with_capacity(ids.len());
+    for id in &ids {
+        if let Some(provider) = providers.iter().find(|p| &p.id == id) {
+            reordered.push(provider.clone());
+        }
+    }
+
+    // Add any providers not in the ids list (keep original order)
+    for provider in providers {
+        if !ids.contains(&provider.id) {
+            reordered.push(provider);
+        }
+    }
+
+    // Save providers
+    let content = serde_json::to_string_pretty(&reordered)
+        .map_err(|e| format!("Failed to serialize providers: {}", e))?;
+    fs::write(&providers_path, content)
+        .map_err(|e| format!("Failed to write providers.json: {}", e))?;
+
+    log::info!("[Codex Provider] Successfully reordered providers");
+    Ok("Successfully reordered Codex providers".to_string())
+}
+
 /// Clear Codex provider configuration (reset to official)
 #[tauri::command]
 pub async fn clear_codex_provider_config() -> Result<String, String> {

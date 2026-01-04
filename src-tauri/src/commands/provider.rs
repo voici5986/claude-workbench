@@ -195,6 +195,36 @@ pub fn get_provider_config(id: String) -> Result<ProviderConfig, String> {
         .ok_or_else(|| format!("未找到ID为 '{}' 的配置", id))
 }
 
+// CRUD 操作 - 重新排序代理商预设
+#[command]
+pub fn reorder_provider_configs(ids: Vec<String>) -> Result<String, String> {
+    let providers = load_legacy_providers()?;
+
+    // 根据传入的 ID 顺序重新排列
+    let mut reordered: Vec<ProviderConfig> = Vec::with_capacity(ids.len());
+    for id in &ids {
+        if let Some(provider) = providers.iter().find(|p| &p.id == id) {
+            reordered.push(provider.clone());
+        }
+    }
+
+    // 添加任何不在 ids 列表中的配置（保持原有顺序）
+    for provider in providers {
+        if !ids.contains(&provider.id) {
+            reordered.push(provider);
+        }
+    }
+
+    // 保存到文件
+    let legacy_path = get_legacy_providers_path()?;
+    let content =
+        serde_json::to_string_pretty(&reordered).map_err(|e| format!("序列化配置失败: {}", e))?;
+
+    fs::write(&legacy_path, content).map_err(|e| format!("写入配置文件失败: {}", e))?;
+
+    Ok("成功重新排序代理商配置".to_string())
+}
+
 // 获取当前代理商配置（从settings.json的env字段和apiKeyHelper字段读取）
 #[command]
 pub fn get_current_provider_config() -> Result<CurrentConfig, String> {

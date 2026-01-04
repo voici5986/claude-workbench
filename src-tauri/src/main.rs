@@ -58,7 +58,7 @@ use commands::prompt_tracker::{
 use commands::provider::{
     add_provider_config, clear_provider_config, delete_provider_config,
     get_current_provider_config, get_provider_config, get_provider_presets, query_provider_usage,
-    switch_provider_config, test_provider_connection, update_provider_config,
+    reorder_provider_configs, switch_provider_config, test_provider_connection, update_provider_config,
 };
 use commands::simple_git::{check_and_init_git, check_reset_safety, precise_revert_code};
 use commands::storage::{
@@ -105,6 +105,7 @@ use commands::codex::{
     record_codex_prompt_completed,
     // Codex rewind commands
     record_codex_prompt_sent,
+    reorder_codex_provider_configs,
     resume_codex,
     resume_last_codex,
     revert_codex_to_prompt,
@@ -153,6 +154,7 @@ use commands::gemini::{
     list_gemini_sessions,
     record_gemini_prompt_completed,
     record_gemini_prompt_sent,
+    reorder_gemini_provider_configs,
     revert_gemini_to_prompt,
     save_gemini_system_prompt,
     set_gemini_wsl_mode_config,
@@ -403,6 +405,7 @@ fn main() {
             delete_provider_config,
             get_provider_config,
             query_provider_usage,
+            reorder_provider_configs,
             // Translation
             translate,
             translate_batch,
@@ -488,6 +491,7 @@ fn main() {
             clear_codex_provider_config,
             test_codex_provider_connection,
             update_codex_reasoning_level,
+            reorder_codex_provider_configs,
             // Codex Usage Statistics
             get_codex_usage_stats,
             // Session Conversion (Claude ↔ Codex)
@@ -532,6 +536,7 @@ fn main() {
             delete_gemini_provider_config,
             clear_gemini_provider_config,
             test_gemini_provider_connection,
+            reorder_gemini_provider_configs,
             // Gemini WSL Commands
             get_gemini_wsl_mode_config,
             set_gemini_wsl_mode_config,

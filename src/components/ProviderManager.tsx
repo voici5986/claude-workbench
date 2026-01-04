@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -24,6 +24,7 @@ import { api, type ProviderConfig, type CurrentProviderConfig, type ApiKeyUsage 
 import { Toast } from '@/components/ui/toast';
 import ProviderForm from './ProviderForm';
 import { useTranslation } from "@/hooks/useTranslation";
+import { SortableList } from '@/components/ui/sortable-list';
 
 interface ProviderManagerProps {
   onBack: () => void;
@@ -263,6 +264,20 @@ export default function ProviderManager({ onBack }: ProviderManagerProps) {
     return `${start}${'*'.repeat(token.length - 12)}${end}`;
   };
 
+  // 处理拖拽排序
+  const handleReorder = useCallback(async (reorderedPresets: ProviderConfig[]) => {
+    setPresets(reorderedPresets);
+    try {
+      const ids = reorderedPresets.map(p => p.id);
+      await api.reorderProviderConfigs(ids);
+    } catch (error) {
+      console.error('Failed to reorder providers:', error);
+      setToastMessage({ message: t('provider.reorderFailed'), type: 'error' });
+      // 重新加载数据以恢复原始顺序
+      loadData();
+    }
+  }, [t]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -341,8 +356,11 @@ export default function ProviderManager({ onBack }: ProviderManagerProps) {
               </div>
             </div>
           ) : (
-            presets.map((config) => (
-            <Card key={config.id} className={`p-4 ${isCurrentProvider(config) ? 'ring-2 ring-primary' : ''}`}>
+            <SortableList
+              items={presets}
+              onReorder={handleReorder}
+              renderItem={(config) => (
+            <Card className={`p-4 ${isCurrentProvider(config) ? 'ring-2 ring-primary' : ''}`}>
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 min-w-0 overflow-hidden">
                   <div className="flex items-center gap-3 mb-2">
@@ -465,7 +483,7 @@ export default function ProviderManager({ onBack }: ProviderManagerProps) {
                       <Trash className="h-3 w-3" aria-hidden="true" />
                     )}
                   </Button>
-                  
+
                   <Button
                     size="sm"
                     onClick={() => switchProvider(config)}
@@ -483,7 +501,8 @@ export default function ProviderManager({ onBack }: ProviderManagerProps) {
                 </div>
               </div>
             </Card>
-            ))
+              )}
+            />
           )}
 
           {/* Toggle tokens visibility */}

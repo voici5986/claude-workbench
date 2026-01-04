@@ -68,8 +68,9 @@ pub use config::{
 
 pub use config::{
     add_codex_provider_config, clear_codex_provider_config, delete_codex_provider_config,
-    get_codex_provider_presets, get_current_codex_config, switch_codex_provider,
-    test_codex_provider_connection, update_codex_provider_config, update_codex_reasoning_level,
+    get_codex_provider_presets, get_current_codex_config, reorder_codex_provider_configs,
+    switch_codex_provider, test_codex_provider_connection, update_codex_provider_config,
+    update_codex_reasoning_level,
 };
 
 // ============================================================================

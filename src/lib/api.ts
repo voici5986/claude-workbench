@@ -2133,6 +2133,20 @@ export const api = {
     }
   },
 
+  /**
+   * Reorders provider configurations
+   * @param ids - Array of provider IDs in the desired order
+   * @returns Promise resolving to success message
+   */
+  async reorderProviderConfigs(ids: string[]): Promise<string> {
+    try {
+      return await invoke<string>("reorder_provider_configs", { ids });
+    } catch (error) {
+      console.error("Failed to reorder provider configs:", error);
+      throw error;
+    }
+  },
+
 
   // ============================================================================
   // ACEMCP INTEGRATION
@@ -3726,6 +3740,20 @@ export const api = {
   },
 
   /**
+   * Reorders Codex provider configurations
+   * @param ids - Array of provider IDs in the desired order
+   * @returns Promise resolving to success message
+   */
+  async reorderCodexProviderConfigs(ids: string[]): Promise<string> {
+    try {
+      return await invoke<string>("reorder_codex_provider_configs", { ids });
+    } catch (error) {
+      console.error("Failed to reorder Codex provider configs:", error);
+      throw error;
+    }
+  },
+
+  /**
    * Clears Codex provider configuration (resets to official)
    * Removes auth.json and config.toml from ~/.codex directory
    * @returns Promise resolving to success message
@@ -3864,6 +3892,20 @@ export const api = {
       return await invoke<string>("delete_gemini_provider_config", { id });
     } catch (error) {
       console.error("Failed to delete Gemini provider config:", error);
+      throw error;
+    }
+  },
+
+  /**
+   * Reorders Gemini provider configurations
+   * @param ids - Array of provider IDs in the desired order
+   * @returns Promise resolving to success message
+   */
+  async reorderGeminiProviderConfigs(ids: string[]): Promise<string> {
+    try {
+      return await invoke<string>("reorder_gemini_provider_configs", { ids });
+    } catch (error) {
+      console.error("Failed to reorder Gemini provider configs:", error);
       throw error;
     }
   },

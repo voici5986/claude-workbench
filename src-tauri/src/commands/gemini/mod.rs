@@ -49,8 +49,8 @@ pub use git_ops::{
 // Re-export Gemini Provider commands
 pub use provider::{
     add_gemini_provider_config, clear_gemini_provider_config, delete_gemini_provider_config,
-    get_current_gemini_provider_config, get_gemini_provider_presets, switch_gemini_provider,
-    test_gemini_provider_connection, update_gemini_provider_config,
+    get_current_gemini_provider_config, get_gemini_provider_presets, reorder_gemini_provider_configs,
+    switch_gemini_provider, test_gemini_provider_connection, update_gemini_provider_config,
 };
 
 // Re-export Gemini Usage Statistics commands
