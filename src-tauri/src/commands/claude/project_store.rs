@@ -632,11 +632,7 @@ fn get_project_path_from_sessions(project_dir: &Path) -> Result<String, String> 
                 if let Ok(file) = fs::File::open(&path) {
                     let reader = BufReader::new(file);
                     // Read up to 10 lines to find cwd field
-                    for (index, line_result) in reader.lines().enumerate() {
-                        if index >= 10 {
-                            break;
-                        }
-
+                    for line_result in reader.lines().take(10) {
                         if let Ok(line) = line_result {
                             if let Ok(json) = serde_json::from_str::<serde_json::Value>(&line) {
                                 if let Some(cwd) = json.get("cwd").and_then(|v| v.as_str()) {
